@@ -5,7 +5,6 @@ var spawn = require('child_process').spawn,
   path = require('path'),
   fs = require('fs');
 
-
 function shspawn(command) {
   console.log("Running Command:", command);
   var deferred = q.defer();
@@ -33,12 +32,10 @@ function detectFileName(dir, extension) {
           if (match[2] == extension) {
             deferred.resolve(match[1]);
             found = true;
-            console.log("File found")
           }
         });
         if (!found) {
-          deferred.reject();
-          console.log("File not found")
+          deferred.reject("File not found");
         }
       }
     });
@@ -49,39 +46,60 @@ function detectFileName(dir, extension) {
   return deferred.promise;
 }
 
-
 function buildRelease() {
   try {
     console.log("Building app");
     console.log(config);
 
-
-
     //Build Platforms
     shspawn('cordova build --release').then(function (code) {
 
-      //Build iOS
-      shspawn('ipa build -d Release/ios -s "'+config.iOSName +'" -c "Release" -m "'+ path.join(process.cwd(), 'release.mobileprovision') + '" -p "'+ path.join(process.cwd(), 'platforms', 'ios', config.iOSName + '.xcodeproj') + "\"")
-        .then(function(){
-          console.log("iOS Build Complete");
-        });
+      buildIos();
+      buildAndroid();
 
-      //Build Android
-      var filename = path.join(process.cwd(), "platforms", "android", "build", "outputs", "apk", "android-release-unsigned.apk");
-      //filename = filename.split('-')[0];
-      console.log("Filename", filename);
-      shspawn('jarsigner -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore ./' + config.name + '.keystore ' + filename + ' ' + config.alias + ' -storepass ' + config.password).then(function (code) {
-        shspawn('mkdir -p Release/android').then(function (code) {
-          shspawn('zipalign -f 4 ' + filename + ' Release/android/app-release.apk').then(function (code) {
-            console.log("Android build complete.")
-          });
-        });
-      });
     });
   } catch (e) {
     console.error("A critical error occurred", e);
   }
 
+}
+
+function buildIos(){
+  q.all([
+      detectFileName(process.cwd(), ".mobileprovision"),
+      detectFileName(path.join(process.cwd(), "platforms", "ios"), ".xcodeproj")
+    ])
+    .then(function (iosPaths) {
+      //Build iOS
+      console.log(iosPaths);
+      shspawn('ipa build -d Release/ios -s "' + iosPaths[1] + '" -c "Release" -m "' + path.join(process.cwd(), iosPaths[0] + '.mobileprovision') + '" -p "' + path.join(process.cwd(), "platforms", "ios", iosPaths[1] +".xcodeproj") + '"')
+        .then(function () {
+          console.log("iOS Build Complete");
+        });
+    })
+    .catch(function (err) {
+      console.log(err);
+      console.error("iOS project not found, or mobileprovision file missing from the root of the project directory");
+    });
+}
+
+function buildAndroid(){
+  //Build Android
+  if(config.crosswalk){
+    var filename = path.join(process.cwd(), "platforms", "android", "build", "outputs", "apk", "android-armv7-release-unsigned.apk");
+  } else {
+    var filename = path.join(process.cwd(), "platforms", "android", "build", "outputs", "apk", "android-release-unsigned.apk");
+  }
+
+  //filename = filename.split('-')[0];
+  console.log("Filename", filename);
+  shspawn('jarsigner -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore ./' + config.name + '.keystore "' + filename + '" ' + config.alias + ' -storepass ' + config.password).then(function (code) {
+    shspawn('mkdir -p Release/android').then(function (code) {
+      shspawn('zipalign -f 4 "' + filename + '" ./Release/android/app-release.apk').then(function (code) {
+        console.log("Android build complete.")
+      });
+    });
+  });
 }
 
 function genKey() {

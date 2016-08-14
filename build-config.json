@@ -2,5 +2,6 @@
     "alias": "snappyapps",
     "name": "snappyapps",
     "password": "snappyapps123",
-    "iOSName": "appName"
+    "iTunesConnectUsername": "abc123@123.com",
+    "iTunesConnectPassword": "abcd1234"
 }
