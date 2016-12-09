@@ -1,6 +1,6 @@
 {
   "name": "cordova-build-release",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "CLI utility to build Android & IOS release packages in one command",
   "main": "app.js",
   "scripts": {
