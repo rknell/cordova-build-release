@@ -64,15 +64,15 @@ function buildRelease() {
 
 }
 
-function buildIos(){
+function buildIos() {
   q.all([
-      detectFileName(process.cwd(), ".mobileprovision"),
-      detectFileName(path.join(process.cwd(), "platforms", "ios"), ".xcodeproj")
-    ])
+    detectFileName(process.cwd(), ".mobileprovision"),
+    detectFileName(path.join(process.cwd(), "platforms", "ios"), ".xcodeproj")
+  ])
     .then(function (iosPaths) {
       //Build iOS
       console.log(iosPaths);
-      shspawn('ipa build -d Release/ios -s "' + iosPaths[1] + '" -c "Release" -m "' + path.join(process.cwd(), iosPaths[0] + '.mobileprovision') + '" -p "' + path.join(process.cwd(), "platforms", "ios", iosPaths[1] +".xcodeproj") + '"')
+      shspawn('ipa build -d Release/ios -s "' + iosPaths[1] + '" -c "Release" -m "' + path.join(process.cwd(), iosPaths[0] + '.mobileprovision') + '" -p "' + path.join(process.cwd(), "platforms", "ios", iosPaths[1] + ".xcodeproj") + '"')
         .then(function () {
           console.log("iOS Build Complete");
         });
@@ -83,9 +83,9 @@ function buildIos(){
     });
 }
 
-function buildAndroid(){
+function buildAndroid() {
   //Build Android
-  if(config.crosswalk){
+  if (config.crosswalk) {
     var filename = path.join(process.cwd(), "platforms", "android", "build", "outputs", "apk", "android-armv7-release-unsigned.apk");
   } else {
     var filename = path.join(process.cwd(), "platforms", "android", "build", "outputs", "apk", "android-release-unsigned.apk");
@@ -94,10 +94,10 @@ function buildAndroid(){
   //filename = filename.split('-')[0];
   console.log("Filename", filename);
   var sigalg = "MD5withRSA";
-  if(config.sigalg){
+  if (config.sigalg) {
     sigalg = config.sigalg;
   }
-  shspawn('jarsigner -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore ./' + config.name + '.keystore "' + filename + '" ' + config.alias + ' -storepass ' + config.password).then(function (code) {
+  shspawn('jarsigner -verbose -sigalg ' + sigalg + ' -digestalg SHA1 -keystore ./' + config.name + '.keystore "' + filename + '" ' + config.alias + ' -storepass ' + config.password).then(function (code) {
     shspawn('mkdir -p Release/android').then(function (code) {
       shspawn('zipalign -f 4 "' + filename + '" ./Release/android/app-release.apk').then(function (code) {
         console.log("Android build complete.")
