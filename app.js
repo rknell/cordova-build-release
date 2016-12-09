@@ -93,6 +93,10 @@ function buildAndroid(){
 
   //filename = filename.split('-')[0];
   console.log("Filename", filename);
+  var sigalg = "MD5withRSA";
+  if(config.sigalg){
+    sigalg = config.sigalg;
+  }
   shspawn('jarsigner -verbose -sigalg MD5withRSA -digestalg SHA1 -keystore ./' + config.name + '.keystore "' + filename + '" ' + config.alias + ' -storepass ' + config.password).then(function (code) {
     shspawn('mkdir -p Release/android').then(function (code) {
       shspawn('zipalign -f 4 "' + filename + '" ./Release/android/app-release.apk').then(function (code) {
